@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#171424">
+  <title>THE P.I.T.T.</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #171424; color: #eee9ff; font-family: system-ui, sans-serif; }
+    body { display: grid; place-items: center; }
+    #player { position: relative; width: min(100vw, 56.25vh); height: min(100vh, 177.7778vw); width: min(100vw, 56.25dvh); height: min(100dvh, 177.7778vw); background: #282239; }
+    #unity-canvas { display: block; width: 100%; height: 100%; touch-action: none; outline: none; }
+    #loading { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 28px; text-align: center; background: #282239; }
+    h1 { font-size: clamp(28px, 7vw, 44px); margin: 0 0 12px; letter-spacing: .06em; color: #ffe26a; }
+    #status { font-size: 14px; margin: 0 0 22px; color: #ccc2e1; }
+    progress { width: min(240px, 80%); height: 8px; border: none; border-radius: 8px; overflow: hidden; background: #49405b; accent-color: #ffe26a; }
+    progress::-webkit-progress-bar { background: #49405b; }
+    progress::-webkit-progress-value { background: #ffe26a; }
+    progress::-moz-progress-bar { background: #ffe26a; }
+    #hint { margin-top: 28px; max-width: 240px; font-size: 13px; line-height: 1.6; color: #a99dbf; }
+    #error { display: none; max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; color: #ffb3b3; font-size: 13px; }
+    #fullscreen { position: fixed; right: max(12px, env(safe-area-inset-right)); bottom: max(12px, env(safe-area-inset-bottom)); padding: 8px 12px; border: 1px solid #625474; border-radius: 8px; background: #282239; color: #eee9ff; font: inherit; font-size: 12px; cursor: pointer; }
+    @media (max-aspect-ratio: 9/16) { #fullscreen { display: none; } }
+  </style>
+</head>
+<body>
+  <main id="player">
+    <canvas id="unity-canvas" width="540" height="960" tabindex="0" aria-label="THE P.I.T.T. — игра"></canvas>
+    <div id="loading">
+      <h1>THE P.I.T.T.</h1>
+      <p id="status">Загрузка игры…</p>
+      <progress id="progress" max="1" value="0" aria-label="Загрузка игры"></progress>
+      <p id="hint">Двигайтесь с помощью WASD, стрелок или перетаскивания пальцем.</p>
+      <p id="error" role="alert"></p>
+    </div>
+  </main>
+  <button id="fullscreen" type="button" disabled>На весь экран</button>
+  <script>
+    const canvas = document.getElementById("unity-canvas");
+    const loading = document.getElementById("loading");
+    const progress = document.getElementById("progress");
+    const fullscreen = document.getElementById("fullscreen");
+    function showError(message) {
+      loading.style.display = "flex";
+      document.getElementById("status").textContent = "Не удалось запустить игру";
+      progress.style.display = "none";
+      const error = document.getElementById("error");
+      error.textContent = String(message);
+      error.style.display = "block";
+    }
+    const config = {
+      dataUrl: "Build/WebGL.data",
+      frameworkUrl: "Build/WebGL.framework.js",
+      codeUrl: "Build/WebGL.wasm",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "DefaultCompany",
+      productName: "PiTTT2",
+      productVersion: "0.1.0",
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+      showBanner: (message, type) => { if (type === "error") showError(message); else console.warn(message); }
+    };
+    const script = document.createElement("script");
+    script.src = "Build/WebGL.loader.js";
+    script.onerror = () => showError("Не удалось загрузить файлы игры. Обновите страницу.");
+    script.onload = () => {
+      createUnityInstance(canvas, config, value => { progress.value = value; }).then(instance => {
+        window.unityInstance = instance;
+        loading.style.display = "none";
+        canvas.focus();
+        fullscreen.disabled = false;
+        fullscreen.onclick = () => instance.SetFullscreen(1);
+      }).catch(showError);
+    };
+    canvas.addEventListener("contextmenu", event => event.preventDefault());
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>
